@@ -58,7 +58,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 /* APP */
 #page-app{display:none;flex-direction:column}
 #page-app.active{display:flex}
-.navbar{position:sticky;top:0;z-index:100;background:rgba(7,9,15,0.93);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;height:58px;gap:1rem}
+.navbar{position:sticky;top:0;z-index:100;background:rgba(7,9,15,0.93);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;height:58px;gap:1rem}
 .nav-brand{font-family:var(--mono);font-size:0.95rem;color:var(--accent);letter-spacing:0.15em;text-shadow:0 0 12px rgba(0,212,255,0.4);white-space:nowrap}
 .nav-center{display:flex;gap:2px;overflow-x:auto}
 .nav-btn{background:none;border:none;padding:0.45rem 0.85rem;color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:0.08em;cursor:pointer;border-radius:6px;transition:all 0.2s;white-space:nowrap}
@@ -115,7 +115,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .card-actions{display:flex;gap:7px}
 .card-actions .btn{flex:1;padding:0.55rem;font-size:10px}
 /* MODAL */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.82);backdrop-filter:blur(5px);z-index:1000;display:none;align-items:center;justify-content:center;padding:1rem}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.82);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);z-index:1000;display:none;align-items:center;justify-content:center;padding:1rem}
 .modal-overlay.open{display:flex}
 .modal{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:540px;max-height:90vh;overflow-y:auto}
 .modal-header{padding:1.25rem 1.25rem 0;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:0.9rem;margin-bottom:1.25rem}
@@ -329,7 +329,9 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 <script>
 // ===== DATA =====
 const NOW = Date.now();
-let S = {
+const saved = localStorage.getItem("roboauction_data");
+
+let S = saved ? JSON.parse(saved) : {
   users: [
     {id:1,username:'admin',password:'admin123',name:'Admin',email:'admin@robo.com',role:'admin',wallet:999999,team:'Organizers',active:true},
     {id:2,username:'deepankar',password:'robo123',name:'Deepankar Vishnoi',email:'d@robo.com',role:'user',wallet:8500,team:'Team Quantum',active:true},
@@ -371,14 +373,14 @@ function doLogin() {
   const user=S.users.find(x=>(x.username===u||x.email===u)&&x.password===p);
   if(!user){document.getElementById('lerr').style.display='block';return;}
   document.getElementById('lerr').style.display='none';
-  S.cur=user; launch();
+  S.cur=user; saveData(); launch();
 }
 function doRegister() {
   const n=v('rn'),u=v('ru'),e=v('re'),p=v('rp'),t=v('rt');
   if(!n||!u||!e||!p||!t){document.getElementById('rerr').style.display='block';return;}
   if(S.users.find(x=>x.username===u)){document.getElementById('rerr').textContent='Username taken!';document.getElementById('rerr').style.display='block';return;}
   const nu={id:S.users.length+1,username:u,password:p,name:n,email:e,role:'user',wallet:10000,team:t,active:true};
-  S.users.push(nu); S.cur=nu;
+  S.users.push(nu); S.cur=nu; saveData();
   notify('Welcome '+n+'! Starting balance: ₹10,000','success');
   launch();
 }
@@ -528,6 +530,16 @@ function submitBid() {
   if(a.bids.length&&a.bids[0].user===S.cur.username){notify('You already have the highest bid!','error');return;}
   a.bids.unshift({user:S.cur.username,amount:val,time:Date.now()});
   a.currentBid=val;
+  // refund previous bidder
+if (a.bids.length > 1) {
+  const prev = S.users.find(u => u.username === a.bids[1].user);
+  if (prev) prev.wallet += a.bids[1].amount;
+}
+
+// deduct from current user
+S.cur.wallet -= val;
+
+saveData();   // ✅ ADD THIS
   S.logs.unshift({time:Date.now(),user:S.cur.username,item:a.name,amount:val,aid:a.id});
   notify('🏆 Bid ₹'+val.toLocaleString()+' placed on '+a.name,'gold');
   document.getElementById('m-cur').textContent='₹'+val.toLocaleString();
@@ -542,6 +554,7 @@ function toggleW(id,btn) {
   const i=S.watchlist.indexOf(id);
   if(i===-1){S.watchlist.push(id);btn.textContent='★';notify('Added to watchlist','success');}
   else{S.watchlist.splice(i,1);btn.textContent='☆';notify('Removed from watchlist','');}
+  saveData();
 }
 function renderWatchlist() {
   const g=document.getElementById('wl-grid');
@@ -664,8 +677,8 @@ function submitAuction() {
   closeModal('add-modal');
   renderManage();
 }
-function endA(id){const a=S.auctions.find(x=>x.id===id);if(!a)return;a.status='ended';a.endTime=Date.now();notify('Ended: '+a.name,'');renderManage();}
-function delA(id){S.auctions=S.auctions.filter(x=>x.id!==id);notify('Deleted','error');renderManage();}
+function endA(id){const a=S.auctions.find(x=>x.id===id);if(!a)return;a.status='ended';a.endTime=Date.now();notify('Ended: '+a.name,'');renderManage();saveData();}
+function delA(id){S.auctions=S.auctions.filter(x=>x.id!==id);notify('Deleted','error');renderManage();saveData();}
 
 // ===== TIMERS =====
 let TI=null;
@@ -698,6 +711,15 @@ function notify(msg,type=''){
 }
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 document.querySelectorAll('.modal-overlay').forEach(m=>{m.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});});
+function saveData() {
+  localStorage.setItem("roboauction_data", JSON.stringify(S));
+}
+window.onload = () => {
+  if (S.cur) {
+    launch();
+  }
+setInterval(() => saveData(), 5000);
+};
 </script>
 </body>
 </html>
