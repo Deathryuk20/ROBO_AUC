@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RoboAuction — Robotics Parts Marketplace</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07090f;--bg2:#0d1117;--bg3:#111820;--bg4:#161f2e;
+  --border:rgba(0,212,255,0.12);--border2:rgba(0,212,255,0.28);
+  --accent:#00d4ff;--accent2:#ff6b35;--accent3:#39ff14;
+  --danger:#ff3b3b;--gold:#ffd700;--text:#d0e8f5;--muted:#5a7a96;
+  --mono:'Orbitron',monospace;--sans:'Rajdhani',sans-serif;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;min-height:100vh;overflow-x:hidden}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,212,255,0.012) 2px,rgba(0,212,255,0.012) 4px);pointer-events:none;z-index:9999}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+.page{display:none;position:relative;z-index:1;min-height:100vh}
+.page.active{display:block}
+/* LOGIN */
+#page-login{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:2rem}
+.login-wrap{width:100%;max-width:440px}
+.login-logo{text-align:center;margin-bottom:2rem}
+.login-logo h1{font-family:var(--mono);font-size:1.7rem;color:var(--accent);letter-spacing:0.15em;text-shadow:0 0 30px rgba(0,212,255,0.5)}
+.login-logo p{color:var(--muted);font-size:12px;margin-top:6px;letter-spacing:0.1em}
+.login-tabs{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:1.25rem}
+.login-tab{flex:1;padding:0.65rem;text-align:center;cursor:pointer;font-family:var(--mono);font-size:11px;letter-spacing:0.1em;color:var(--muted);background:var(--bg2);transition:all 0.2s;border:none}
+.login-tab.active{background:rgba(0,212,255,0.1);color:var(--accent);border-bottom:2px solid var(--accent)}
+.login-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.75rem}
+.fg{margin-bottom:1.1rem}
+.fg label{display:block;font-size:11px;font-family:var(--mono);color:var(--muted);letter-spacing:0.1em;margin-bottom:5px}
+.fg input,.fg select,.fg textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.7rem 0.9rem;color:var(--text);font-family:var(--sans);font-size:15px;outline:none;transition:border-color 0.2s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--accent)}
+.fg input::placeholder{color:var(--muted)}
+.fg textarea{resize:vertical;min-height:70px;font-size:14px}
+.fg select option{background:var(--bg3)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0.7rem 1.4rem;border-radius:6px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:0.08em;cursor:pointer;border:none;transition:all 0.2s;text-decoration:none}
+.btn-full{width:100%}
+.btn-primary{background:var(--accent);color:#07090f}
+.btn-primary:hover{filter:brightness(1.12);box-shadow:0 0 18px rgba(0,212,255,0.35);transform:translateY(-1px)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-danger:hover{filter:brightness(1.1)}
+.btn-ghost{background:transparent;color:var(--accent);border:1px solid var(--border2)}
+.btn-ghost:hover{background:rgba(0,212,255,0.07)}
+.btn-gold{background:var(--gold);color:#07090f}
+.btn-gold:hover{filter:brightness(1.1);box-shadow:0 0 18px rgba(255,215,0,0.35)}
+.btn-orange{background:var(--accent2);color:#fff}
+.login-switch{text-align:center;margin-top:0.75rem;font-size:13px;color:var(--muted)}
+.login-switch span{color:var(--accent);cursor:pointer}
+.demo-creds{margin-top:1rem;padding:0.7rem;background:rgba(0,212,255,0.04);border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:var(--mono);color:var(--muted);line-height:1.9}
+.demo-creds b{color:var(--accent)}
+.err{color:var(--danger);font-size:11px;margin-top:0.4rem;font-family:var(--mono);display:none}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.9rem}
+.form-grid .s2{grid-column:span 2}
+/* APP */
+#page-app{display:none;flex-direction:column}
+#page-app.active{display:flex}
+.navbar{position:sticky;top:0;z-index:100;background:rgba(7,9,15,0.93);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;height:58px;gap:1rem}
+.nav-brand{font-family:var(--mono);font-size:0.95rem;color:var(--accent);letter-spacing:0.15em;text-shadow:0 0 12px rgba(0,212,255,0.4);white-space:nowrap}
+.nav-center{display:flex;gap:2px;overflow-x:auto}
+.nav-btn{background:none;border:none;padding:0.45rem 0.85rem;color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:0.08em;cursor:pointer;border-radius:6px;transition:all 0.2s;white-space:nowrap}
+.nav-btn:hover,.nav-btn.active{color:var(--accent);background:rgba(0,212,255,0.08)}
+.nav-right{display:flex;align-items:center;gap:0.75rem;white-space:nowrap}
+.nav-user{font-size:12px;color:var(--muted);font-family:var(--mono)}
+.nav-user b{color:var(--text)}
+.wallet-badge{background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.3);border-radius:100px;padding:3px 10px;font-size:11px;font-family:var(--mono);color:var(--gold)}
+.view{display:none;padding:1.75rem;max-width:1200px;margin:0 auto;width:100%}
+.view.active{display:block}
+.sec-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem}
+.sec-title{font-family:var(--mono);font-size:1rem;color:var(--accent);letter-spacing:0.1em}
+.sec-title span{color:var(--muted);font-size:0.78em}
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0.9rem;margin-bottom:1.75rem}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.1rem;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),transparent)}
+.stat-label{font-size:10px;font-family:var(--mono);color:var(--muted);letter-spacing:0.1em;margin-bottom:5px}
+.stat-val{font-size:1.7rem;font-family:var(--mono);font-weight:700;color:var(--text)}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:3px}
+.stat-card.gold::before{background:linear-gradient(90deg,var(--gold),transparent)}
+.stat-card.gold .stat-val{color:var(--gold)}
+.stat-card.green::before{background:linear-gradient(90deg,var(--accent3),transparent)}
+.stat-card.green .stat-val{color:var(--accent3)}
+.stat-card.orange::before{background:linear-gradient(90deg,var(--accent2),transparent)}
+.stat-card.orange .stat-val{color:var(--accent2)}
+/* AUCTION GRID */
+.auction-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:1.1rem}
+.acard{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:all 0.25s;position:relative}
+.acard:hover{border-color:var(--border2);transform:translateY(-3px);box-shadow:0 8px 28px rgba(0,212,255,0.09)}
+.acard.ending{border-color:rgba(255,59,59,0.35);animation:pulseBorder 2s infinite}
+@keyframes pulseBorder{0%,100%{box-shadow:0 0 0 0 rgba(255,59,59,0.25)}50%{box-shadow:0 0 0 5px rgba(255,59,59,0)}}
+.acard.ended{opacity:0.55;filter:grayscale(0.4)}
+.card-img{height:150px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:3.5rem;position:relative;border-bottom:1px solid var(--border)}
+.card-badge{position:absolute;top:10px;right:10px;font-family:var(--mono);font-size:10px;padding:3px 8px;border-radius:4px;letter-spacing:0.06em;font-weight:700}
+.badge-live{background:rgba(57,255,20,0.13);border:1px solid rgba(57,255,20,0.35);color:var(--accent3)}
+.badge-ended{background:rgba(255,59,59,0.13);border:1px solid rgba(255,59,59,0.35);color:var(--danger)}
+.badge-hot{background:rgba(255,107,53,0.18);border:1px solid rgba(255,107,53,0.35);color:var(--accent2)}
+.card-body{padding:1.1rem}
+.card-cat{font-size:10px;font-family:var(--mono);color:var(--muted);letter-spacing:0.1em;margin-bottom:5px}
+.card-title{font-size:1rem;font-weight:700;margin-bottom:5px;color:var(--text);line-height:1.3}
+.card-desc{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:0.9rem}
+.card-price-row{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:0.9rem}
+.price-label{font-size:9px;font-family:var(--mono);color:var(--muted);letter-spacing:0.1em}
+.price-val{font-size:1.25rem;font-family:var(--mono);font-weight:700;color:var(--gold)}
+.price-start{font-size:10px;color:var(--muted);margin-top:2px}
+.bids-count{font-size:11px;font-family:var(--mono);color:var(--muted);text-align:right}
+.bids-count b{color:var(--text)}
+.timer-text{font-size:10px;font-family:var(--mono);color:var(--muted);margin-bottom:0.5rem;display:flex;justify-content:space-between}
+.time-left{font-weight:700}
+.time-danger{color:var(--danger)!important}
+.timer-bar{background:var(--bg3);border-radius:4px;height:3px;margin-bottom:0.9rem;overflow:hidden}
+.timer-fill{height:100%;border-radius:4px}
+.card-actions{display:flex;gap:7px}
+.card-actions .btn{flex:1;padding:0.55rem;font-size:10px}
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.82);backdrop-filter:blur(5px);z-index:1000;display:none;align-items:center;justify-content:center;padding:1rem}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:540px;max-height:90vh;overflow-y:auto}
+.modal-header{padding:1.25rem 1.25rem 0;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:0.9rem;margin-bottom:1.25rem}
+.modal-title{font-family:var(--mono);font-size:0.9rem;color:var(--accent);letter-spacing:0.1em}
+.modal-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.2rem;padding:4px;line-height:1}
+.modal-close:hover{color:var(--text)}
+.modal-body{padding:0 1.25rem 1.25rem}
+.bid-history{background:var(--bg3);border:1px solid var(--border);border-radius:8px;max-height:180px;overflow-y:auto;margin:0.9rem 0}
+.bid-row{display:flex;justify-content:space-between;align-items:center;padding:0.55rem 0.9rem;border-bottom:1px solid var(--border);font-size:12px}
+.bid-row:last-child{border-bottom:none}
+.bid-row.winning{background:rgba(255,215,0,0.05)}
+.bid-user{font-family:var(--mono);color:var(--text);font-size:11px}
+.bid-amount{font-family:var(--mono);color:var(--gold);font-weight:700}
+.bid-time{color:var(--muted);font-size:10px}
+.bid-input-row{display:flex;gap:8px;margin-top:0.9rem}
+.bid-input-row input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.7rem 0.9rem;color:var(--text);font-family:var(--mono);font-size:14px;outline:none}
+.bid-input-row input:focus{border-color:var(--gold)}
+/* TABLES */
+.data-table{width:100%;border-collapse:collapse;font-size:13px}
+.data-table th{text-align:left;padding:0.65rem 0.9rem;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.1em;border-bottom:1px solid var(--border);font-weight:400}
+.data-table td{padding:0.65rem 0.9rem;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:rgba(0,212,255,0.025)}
+.table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;overflow-x:auto}
+.status-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:100px;font-size:10px;font-family:var(--mono)}
+.pill-live{background:rgba(57,255,20,0.1);color:var(--accent3);border:1px solid rgba(57,255,20,0.28)}
+.pill-ended{background:rgba(255,59,59,0.1);color:var(--danger);border:1px solid rgba(255,59,59,0.28)}
+.pill-upcoming{background:rgba(0,212,255,0.08);color:var(--accent);border:1px solid var(--border2)}
+/* FILTER */
+.filter-bar{display:flex;gap:7px;margin-bottom:1.25rem;flex-wrap:wrap}
+.filter-chip{padding:4px 13px;border-radius:100px;font-family:var(--mono);font-size:10px;cursor:pointer;border:1px solid var(--border);background:var(--bg2);color:var(--muted);transition:all 0.2s}
+.filter-chip.active{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,0.07)}
+/* NOTIF */
+.notif{position:fixed;top:68px;right:1.25rem;z-index:2000;display:flex;flex-direction:column;gap:7px;pointer-events:none}
+.notif-item{background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:0.65rem 1.1rem;font-size:12px;font-family:var(--mono);color:var(--text);min-width:220px;animation:slideIn 0.3s ease;pointer-events:all}
+.notif-item.success{border-color:rgba(57,255,20,0.4);color:var(--accent3)}
+.notif-item.error{border-color:rgba(255,59,59,0.4);color:var(--danger)}
+.notif-item.gold{border-color:rgba(255,215,0,0.4);color:var(--gold)}
+@keyframes slideIn{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}
+.live-dot{width:7px;height:7px;background:var(--accent3);border-radius:50%;display:inline-block;animation:blink 1s step-end infinite;margin-right:5px}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.15}}
+.empty-state{text-align:center;padding:3.5rem 2rem;color:var(--muted)}
+.empty-icon{font-size:2.5rem;margin-bottom:0.75rem;opacity:0.45}
+.empty-state p{font-family:var(--mono);font-size:12px;letter-spacing:0.08em;line-height:2}
+.my-bid-row{display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:7px}
+.my-bid-row.winning-bid{border-color:rgba(255,215,0,0.28);background:rgba(255,215,0,0.03)}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:rgba(0,212,255,0.18);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN PAGE -->
+<div id="page-login" class="page active">
+  <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:2rem">
+    <div class="login-wrap">
+      <div class="login-logo">
+        <h1>⚡ ROBOAUCTION</h1>
+        <p>ROBOTICS PARTS MARKETPLACE · HACKATHON EDITION</p>
+      </div>
+      <div class="login-tabs">
+        <button class="login-tab active" onclick="switchAuthTab('login')">LOGIN</button>
+        <button class="login-tab" onclick="switchAuthTab('register')">REGISTER</button>
+      </div>
+      <!-- LOGIN -->
+      <div id="form-login" class="login-card">
+        <div class="fg"><label>USERNAME / EMAIL</label><input type="text" id="lu" placeholder="Enter username or email"></div>
+        <div class="fg"><label>PASSWORD</label><input type="password" id="lp" placeholder="Password"></div>
+        <div class="err" id="lerr">Invalid credentials. Try again.</div>
+        <button class="btn btn-primary btn-full" style="margin-top:0.4rem" onclick="doLogin()">LOGIN →</button>
+        <div class="demo-creds"><b>DEMO ACCOUNTS</b><br>Admin: <b>admin</b> / <b>admin123</b><br>User: <b>deepankar</b> / <b>robo123</b><br>User: <b>priya</b> / <b>robo123</b></div>
+        <div class="login-switch">New here? <span onclick="switchAuthTab('register')">Register</span></div>
+      </div>
+      <!-- REGISTER -->
+      <div id="form-register" class="login-card" style="display:none">
+        <div class="form-grid">
+          <div class="fg"><label>FULL NAME</label><input type="text" id="rn" placeholder="Your name"></div>
+          <div class="fg"><label>USERNAME</label><input type="text" id="ru" placeholder="Username"></div>
+          <div class="fg s2"><label>EMAIL</label><input type="email" id="re" placeholder="your@email.com"></div>
+          <div class="fg"><label>PASSWORD</label><input type="password" id="rp" placeholder="Min 6 chars"></div>
+          <div class="fg"><label>TEAM NAME</label><input type="text" id="rt" placeholder="Your hackathon team"></div>
+        </div>
+        <div class="err" id="rerr">Please fill all fields.</div>
+        <button class="btn btn-primary btn-full" style="margin-top:0.4rem" onclick="doRegister()">CREATE ACCOUNT →</button>
+        <p style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:0.5rem;text-align:center">New accounts start with ₹10,000 wallet balance</p>
+        <div class="login-switch">Have an account? <span onclick="switchAuthTab('login')">Login</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="page-app" class="page">
+  <nav class="navbar">
+    <div class="nav-brand">⚡ ROBOAUCTION</div>
+    <div class="nav-center" id="nav-links"></div>
+    <div class="nav-right">
+      <div class="wallet-badge" id="wallet-display">💰 ₹0</div>
+      <div class="nav-user" id="nav-user-info"></div>
+      <button class="btn btn-ghost" style="padding:0.35rem 0.7rem;font-size:10px" onclick="doLogout()">LOGOUT</button>
+    </div>
+  </nav>
+
+  <!-- USER VIEWS -->
+  <div id="usec">
+    <div class="view active" id="view-market">
+      <div class="stats-row" id="mkt-stats"></div>
+      <div class="sec-header"><div class="sec-title">LIVE AUCTIONS <span>/ MARKETPLACE</span></div></div>
+      <div class="filter-bar">
+        <div class="filter-chip active" onclick="filterA('all',this)">All Parts</div>
+        <div class="filter-chip" onclick="filterA('Motor & Drive',this)">Motor & Drive</div>
+        <div class="filter-chip" onclick="filterA('Sensing',this)">Sensing</div>
+        <div class="filter-chip" onclick="filterA('Structure',this)">Structure</div>
+        <div class="filter-chip" onclick="filterA('Electronics',this)">Electronics</div>
+        <div class="filter-chip" onclick="filterA('Power',this)">Power</div>
+      </div>
+      <div class="auction-grid" id="agrid"></div>
+    </div>
+    <div class="view" id="view-mybids">
+      <div class="sec-header"><div class="sec-title">MY BIDS <span>/ ACTIVITY</span></div></div>
+      <div class="stats-row" id="mb-stats"></div>
+      <div id="mb-list"></div>
+    </div>
+    <div class="view" id="view-watchlist">
+      <div class="sec-header"><div class="sec-title">WATCHLIST <span>/ SAVED ITEMS</span></div></div>
+      <div class="auction-grid" id="wl-grid"></div>
+    </div>
+  </div>
+
+  <!-- ADMIN VIEWS -->
+  <div id="asec" style="display:none">
+    <div class="view active" id="view-dashboard">
+      <div class="sec-header"><div class="sec-title">ADMIN DASHBOARD <span>/ OVERVIEW</span></div></div>
+      <div class="stats-row" id="adm-stats"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-top:1.25rem">
+        <div><div class="sec-title" style="font-size:0.85rem;margin-bottom:0.75rem">RECENT BIDS</div><div class="table-wrap"><div id="recent-act" style="padding:0.25rem"></div></div></div>
+        <div><div class="sec-title" style="font-size:0.85rem;margin-bottom:0.75rem">TOP BIDDERS</div><div class="table-wrap"><div id="top-bid" style="padding:0.25rem"></div></div></div>
+      </div>
+    </div>
+    <div class="view" id="view-manage">
+      <div class="sec-header"><div class="sec-title">MANAGE AUCTIONS</div><button class="btn btn-primary" onclick="openAddModal()">+ ADD ITEM</button></div>
+      <div class="table-wrap">
+        <table class="data-table"><thead><tr><th>ITEM</th><th>CATEGORY</th><th>START</th><th>CURRENT BID</th><th>BIDS</th><th>STATUS</th><th>TIME LEFT</th><th>ACTIONS</th></tr></thead>
+        <tbody id="man-tbody"></tbody></table>
+      </div>
+    </div>
+    <div class="view" id="view-users">
+      <div class="sec-header"><div class="sec-title">USERS <span>/ REGISTERED</span></div></div>
+      <div class="table-wrap">
+        <table class="data-table"><thead><tr><th>USERNAME</th><th>NAME</th><th>TEAM</th><th>WALLET</th><th>BIDS</th><th>WON</th><th>STATUS</th></tr></thead>
+        <tbody id="usr-tbody"></tbody></table>
+      </div>
+    </div>
+    <div class="view" id="view-bidlogs">
+      <div class="sec-header"><div class="sec-title">BID LOGS <span>/ ALL ACTIVITY</span></div></div>
+      <div class="table-wrap">
+        <table class="data-table"><thead><tr><th>TIME</th><th>USER</th><th>ITEM</th><th>AMOUNT</th><th>RESULT</th></tr></thead>
+        <tbody id="logs-tbody"></tbody></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BID MODAL -->
+<div class="modal-overlay" id="bid-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title" id="m-title">PLACE BID</div><button class="modal-close" onclick="closeModal('bid-modal')">✕</button></div>
+    <div class="modal-body">
+      <div style="display:flex;gap:1rem;align-items:center;margin-bottom:1.25rem">
+        <div style="font-size:2.8rem" id="m-emoji"></div>
+        <div><div style="font-size:1rem;font-weight:700;color:var(--text)" id="m-name"></div><div style="font-size:11px;color:var(--muted);margin-top:4px" id="m-cat"></div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.9rem;margin-bottom:0.9rem">
+        <div class="stat-card gold"><div class="stat-label">CURRENT BID</div><div class="stat-val" id="m-cur">₹0</div></div>
+        <div class="stat-card"><div class="stat-label">YOUR WALLET</div><div class="stat-val" id="m-wallet">₹0</div></div>
+      </div>
+      <div class="timer-text"><span>⏱ TIME LEFT</span><span class="time-left" id="m-timer">--:--</span></div>
+      <div class="sec-title" style="font-size:0.8rem;margin-bottom:0.4rem">BID HISTORY</div>
+      <div class="bid-history" id="m-hist"></div>
+      <div class="bid-input-row">
+        <input type="number" id="bid-val" placeholder="Enter your bid (₹)">
+        <button class="btn btn-gold" onclick="submitBid()">BID NOW</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:0.4rem;font-family:var(--mono)" id="m-hint"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD AUCTION MODAL -->
+<div class="modal-overlay" id="add-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">ADD AUCTION ITEM</div><button class="modal-close" onclick="closeModal('add-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="fg s2"><label>ITEM NAME</label><input type="text" id="a-name" placeholder="e.g. 6-DOF Robotic Arm"></div>
+        <div class="fg"><label>CATEGORY</label><select id="a-cat"><option>Motor & Drive</option><option>Sensing</option><option>Structure</option><option>Electronics</option><option>Power</option></select></div>
+        <div class="fg"><label>EMOJI</label><input type="text" id="a-emoji" placeholder="🤖"></div>
+        <div class="fg"><label>START PRICE (₹)</label><input type="number" id="a-price" placeholder="500"></div>
+        <div class="fg"><label>DURATION (MIN)</label><input type="number" id="a-dur" value="10" placeholder="10"></div>
+        <div class="fg"><label>CONDITION</label><select id="a-cond"><option>Brand New</option><option>Like New</option><option>Good</option><option>Fair</option></select></div>
+        <div class="fg s2"><label>DESCRIPTION</label><textarea id="a-desc" placeholder="Describe specs, condition, use case..."></textarea></div>
+      </div>
+      <button class="btn btn-primary btn-full" style="margin-top:0.9rem" onclick="submitAuction()">PUBLISH AUCTION →</button>
+    </div>
+  </div>
+</div>
+
+<div class="notif" id="notif"></div>
+
+<script>
+// ===== DATA =====
+const NOW = Date.now();
+let S = {
+  users: [
+    {id:1,username:'admin',password:'admin123',name:'Admin',email:'admin@robo.com',role:'admin',wallet:999999,team:'Organizers',active:true},
+    {id:2,username:'deepankar',password:'robo123',name:'Deepankar Vishnoi',email:'d@robo.com',role:'user',wallet:8500,team:'Team Quantum',active:true},
+    {id:3,username:'priya',password:'robo123',name:'Priya Sharma',email:'p@robo.com',role:'user',wallet:12000,team:'RoboNinjas',active:true},
+    {id:4,username:'arjun',password:'robo123',name:'Arjun Mehta',email:'a@robo.com',role:'user',wallet:6200,team:'MechBots',active:true},
+    {id:5,username:'sara',password:'robo123',name:'Sara Khan',email:'s@robo.com',role:'user',wallet:9800,team:'Cybercraft',active:true},
+  ],
+  auctions: [
+    {id:1,name:'High-Torque Servo (MG996R)',cat:'Motor & Drive',emoji:'⚙️',desc:'Metal gear servo, 10kg torque, 180° rotation. Pulled from working prototype. All gears intact.',condition:'Like New',startPrice:450,currentBid:1200,endTime:NOW+8*60000,status:'live',bids:[{user:'priya',amount:1200,time:NOW-120000},{user:'arjun',amount:950,time:NOW-300000},{user:'deepankar',amount:700,time:NOW-500000}]},
+    {id:2,name:'RPLiDAR A1M8 Scanner',cat:'Sensing',emoji:'📡',desc:'360° laser scanner, 10m range, 8000 samples/sec. Ideal for autonomous navigation & SLAM mapping.',condition:'Good',startPrice:3500,currentBid:5800,endTime:NOW+22*60000,status:'live',bids:[{user:'deepankar',amount:5800,time:NOW-60000},{user:'sara',amount:5200,time:NOW-180000},{user:'arjun',amount:4500,time:NOW-350000}]},
+    {id:3,name:'BLDC Motor Kit 250W',cat:'Motor & Drive',emoji:'🔩',desc:'3-phase brushless DC motor 24V with ESC controller. High efficiency, used in drone prototypes. Never run past 50%.',condition:'Brand New',startPrice:1200,currentBid:1200,endTime:NOW+45*60000,status:'live',bids:[]},
+    {id:4,name:'6-DOF Robotic Arm Full Kit',cat:'Structure',emoji:'🦾',desc:'Aluminum alloy 6-axis arm. Includes 6 servos, controller board, mounting hardware. Demo assembled once.',condition:'Good',startPrice:4000,currentBid:6500,endTime:NOW+3*60000,status:'live',bids:[{user:'sara',amount:6500,time:NOW-90000},{user:'priya',amount:6000,time:NOW-200000},{user:'deepankar',amount:5500,time:NOW-320000}]},
+    {id:5,name:'LiPo Pack 5000mAh 3S',cat:'Power',emoji:'🔋',desc:'11.1V 5000mAh 50C LiPo battery. Compatible with most RC and robotics systems. 30 cycles used, capacity 96%.',condition:'Good',startPrice:800,currentBid:1350,endTime:NOW+60*60000,status:'live',bids:[{user:'arjun',amount:1350,time:NOW-240000},{user:'priya',amount:1100,time:NOW-480000}]},
+    {id:6,name:'Raspberry Pi 4B — 4GB',cat:'Electronics',emoji:'💾',desc:'RPi 4 Model B 4GB RAM. Used 2 months for vision project. All GPIO, USB, HDMI ports tested and working.',condition:'Like New',startPrice:3200,currentBid:4100,endTime:NOW+15*60000,status:'live',bids:[{user:'deepankar',amount:4100,time:NOW-100000},{user:'arjun',amount:3800,time:NOW-250000},{user:'sara',amount:3400,time:NOW-400000}]},
+    {id:7,name:'Ultrasonic Sensor Pack x4',cat:'Sensing',emoji:'🔬',desc:'HC-SR04 ultrasonic sensors, 4 units. 2cm-400cm range. Used once for obstacle avoidance project. Fully calibrated.',condition:'Like New',startPrice:250,currentBid:480,endTime:NOW-5*60000,status:'ended',bids:[{user:'arjun',amount:480,time:NOW-360000},{user:'priya',amount:400,time:NOW-480000}]},
+    {id:8,name:'Omni Wheel Set 60mm x4',cat:'Structure',emoji:'🛞',desc:'4x 60mm omni-directional wheels with 12mm bore. Rubber rollers, aluminum hub. Perfect for holonomic drives.',condition:'Brand New',startPrice:600,currentBid:600,endTime:NOW+90*60000,status:'live',bids:[]},
+    {id:9,name:'OV5647 Pi Camera Module',cat:'Sensing',emoji:'📷',desc:'5MP camera, Raspberry Pi compatible. 1080p @30fps, 90° FOV. Used in line-following project. Works perfectly.',condition:'Good',startPrice:400,currentBid:720,endTime:NOW+35*60000,status:'live',bids:[{user:'sara',amount:720,time:NOW-150000},{user:'deepankar',amount:600,time:NOW-300000}]},
+    {id:10,name:'Custom Motor Controller PCB',cat:'Electronics',emoji:'🔬',desc:'Custom designed ATmega328P motor controller. 4 motor channels, I2C + UART comms. Tested, documentation included.',condition:'Good',startPrice:1500,currentBid:2200,endTime:NOW+12*60000,status:'live',bids:[{user:'priya',amount:2200,time:NOW-80000},{user:'arjun',amount:1900,time:NOW-220000}]},
+  ],
+  cur: null,
+  watchlist: [],
+  logs: [],
+  filter: 'all',
+  activeBid: null,
+};
+
+// build logs from initial bids
+S.auctions.forEach(a => a.bids.forEach(b => S.logs.push({time:b.time,user:b.user,item:a.name,amount:b.amount,aid:a.id})));
+S.logs.sort((a,b)=>b.time-a.time);
+
+// ===== AUTH =====
+function switchAuthTab(t) {
+  document.querySelectorAll('.login-tab').forEach((el,i)=>el.classList.toggle('active',i===(t==='login'?0:1)));
+  document.getElementById('form-login').style.display=t==='login'?'block':'none';
+  document.getElementById('form-register').style.display=t==='register'?'block':'none';
+}
+function doLogin() {
+  const u=document.getElementById('lu').value.trim(), p=document.getElementById('lp').value.trim();
+  const user=S.users.find(x=>(x.username===u||x.email===u)&&x.password===p);
+  if(!user){document.getElementById('lerr').style.display='block';return;}
+  document.getElementById('lerr').style.display='none';
+  S.cur=user; launch();
+}
+function doRegister() {
+  const n=v('rn'),u=v('ru'),e=v('re'),p=v('rp'),t=v('rt');
+  if(!n||!u||!e||!p||!t){document.getElementById('rerr').style.display='block';return;}
+  if(S.users.find(x=>x.username===u)){document.getElementById('rerr').textContent='Username taken!';document.getElementById('rerr').style.display='block';return;}
+  const nu={id:S.users.length+1,username:u,password:p,name:n,email:e,role:'user',wallet:10000,team:t,active:true};
+  S.users.push(nu); S.cur=nu;
+  notify('Welcome '+n+'! Starting balance: ₹10,000','success');
+  launch();
+}
+function doLogout(){S.cur=null;stopT();document.getElementById('page-app').classList.remove('active');document.getElementById('page-app').style.display='none';document.getElementById('page-login').classList.add('active');}
+function v(id){return document.getElementById(id).value.trim();}
+
+// ===== LAUNCH =====
+function launch() {
+  document.getElementById('page-login').classList.remove('active');
+  const app=document.getElementById('page-app');
+  app.classList.add('active'); app.style.display='flex';
+  document.getElementById('nav-user-info').innerHTML=`<b>${S.cur.name}</b>`;
+  updateWallet();
+  buildNav();
+  if(S.cur.role==='admin'){
+    document.getElementById('usec').style.display='none';
+    document.getElementById('asec').style.display='block';
+    renderDashboard();
+  } else {
+    document.getElementById('usec').style.display='block';
+    document.getElementById('asec').style.display='none';
+    renderMarket();
+  }
+  startT();
+}
+
+function buildNav() {
+  const nl=document.getElementById('nav-links');
+  if(S.cur.role==='admin'){
+    nl.innerHTML=`<button class="nav-btn active" onclick="sv('dashboard',this)">DASHBOARD</button><button class="nav-btn" onclick="sv('manage',this)">AUCTIONS</button><button class="nav-btn" onclick="sv('users',this)">USERS</button><button class="nav-btn" onclick="sv('bidlogs',this)">BID LOGS</button>`;
+  } else {
+    nl.innerHTML=`<button class="nav-btn active" onclick="sv('market',this)">MARKETPLACE</button><button class="nav-btn" onclick="sv('mybids',this)">MY BIDS</button><button class="nav-btn" onclick="sv('watchlist',this)">WATCHLIST</button>`;
+  }
+}
+
+function sv(id,btn) {
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+id).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  const fn={market:renderMarket,mybids:renderMyBids,watchlist:renderWatchlist,dashboard:renderDashboard,manage:renderManage,users:renderUsers,bidlogs:renderLogs};
+  if(fn[id]) fn[id]();
+}
+
+function updateWallet(){
+  const u=S.users.find(x=>x.id===S.cur.id);
+  if(u){S.cur.wallet=u.wallet;document.getElementById('wallet-display').textContent='💰 ₹'+u.wallet.toLocaleString();}
+}
+
+// ===== MARKETPLACE =====
+function renderMarket() {
+  const live=S.auctions.filter(a=>a.status==='live').length;
+  const tb=S.auctions.reduce((s,a)=>s+a.bids.length,0);
+  const ending=S.auctions.filter(a=>a.status==='live'&&(a.endTime-Date.now())<5*60000).length;
+  document.getElementById('mkt-stats').innerHTML=`
+    <div class="stat-card green"><div class="stat-label"><span class="live-dot"></span>LIVE NOW</div><div class="stat-val">${live}</div><div class="stat-sub">active auctions</div></div>
+    <div class="stat-card"><div class="stat-label">TOTAL BIDS</div><div class="stat-val">${tb}</div><div class="stat-sub">across all items</div></div>
+    <div class="stat-card orange"><div class="stat-label">ENDING SOON</div><div class="stat-val">${ending}</div><div class="stat-sub">under 5 min left</div></div>
+    <div class="stat-card gold"><div class="stat-label">MY WALLET</div><div class="stat-val">₹${S.cur.wallet.toLocaleString()}</div><div class="stat-sub">available balance</div></div>
+  `;
+  renderGrid();
+}
+
+function filterA(cat,el) {
+  S.filter=cat;
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderGrid();
+}
+
+function renderGrid() {
+  const grid=document.getElementById('agrid');
+  let items=S.filter==='all'?S.auctions:S.auctions.filter(a=>a.cat===S.filter);
+  const live=items.filter(a=>a.status==='live').sort((a,b)=>a.endTime-b.endTime);
+  const ended=items.filter(a=>a.status==='ended');
+  const all=[...live,...ended];
+  if(!all.length){grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🔍</div><p>NO ITEMS IN THIS CATEGORY</p></div>`;return;}
+  grid.innerHTML=all.map(cardHTML).join('');
+}
+
+function cardHTML(a) {
+  const isEnded=a.status==='ended';
+  const tl=a.endTime-Date.now();
+  const ending=!isEnded&&tl<5*60000;
+  const top=a.bids.length?a.bids[0].user:'—';
+  const isMine=top===S.cur.username;
+  const pct=isEnded?0:Math.max(0,Math.min(100,(tl/(60*60000))*100));
+  const tcol=isEnded?'#222':ending?'var(--danger)':tl<15*60000?'var(--accent2)':'var(--accent)';
+  const badge=isEnded?'<div class="card-badge badge-ended">ENDED</div>':ending?'<div class="card-badge badge-hot">🔥 ENDING</div>':'<div class="card-badge badge-live">● LIVE</div>';
+  const inW=S.watchlist.includes(a.id);
+  return `<div class="acard${ending?' ending':''}${isEnded?' ended':''}" id="ac-${a.id}">
+    <div class="card-img"><span style="font-size:3.5rem">${a.emoji}</span>${badge}</div>
+    <div class="card-body">
+      <div class="card-cat">${a.cat} · ${a.condition}</div>
+      <div class="card-title">${a.name}</div>
+      <div class="card-desc">${a.desc.substring(0,75)}...</div>
+      <div class="card-price-row">
+        <div><div class="price-label">${isEnded?'FINAL PRICE':'CURRENT BID'}</div><div class="price-val">₹${a.currentBid.toLocaleString()}</div><div class="price-start">Start: ₹${a.startPrice.toLocaleString()}</div></div>
+        <div class="bids-count"><b>${a.bids.length}</b> bids<br>${isEnded?'<span style="color:var(--gold);font-size:10px">WON: '+top+'</span>':isMine?'<span style="color:var(--accent3)">▲ YOU LEAD</span>':'Top: '+top}</div>
+      </div>
+      <div class="timer-text"><span>⏱ ${isEnded?'ENDED':'TIME LEFT'}</span><span class="time-left${ending?' time-danger':''}" id="t-${a.id}">${isEnded?'—':fmtT(tl)}</span></div>
+      <div class="timer-bar"><div class="timer-fill" style="width:${pct}%;background:${tcol}"></div></div>
+      <div class="card-actions">
+        ${!isEnded?`<button class="btn btn-gold" onclick="openBid(${a.id})" style="flex:2">BID NOW →</button>`:`<button class="btn btn-ghost" disabled style="flex:2;opacity:0.4">CLOSED</button>`}
+        <button class="btn btn-ghost" onclick="toggleW(${a.id},this)" style="flex:0;padding:0.55rem 0.7rem">${inW?'★':'☆'}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ===== BID MODAL =====
+function openBid(id) {
+  const a=S.auctions.find(x=>x.id===id);
+  if(!a||a.status==='ended') return;
+  S.activeBid=id;
+  document.getElementById('m-title').textContent='BID — ITEM #'+id;
+  document.getElementById('m-emoji').textContent=a.emoji;
+  document.getElementById('m-name').textContent=a.name;
+  document.getElementById('m-cat').textContent=a.cat+' · '+a.condition;
+  document.getElementById('m-cur').textContent='₹'+a.currentBid.toLocaleString();
+  document.getElementById('m-wallet').textContent='₹'+S.cur.wallet.toLocaleString();
+  const min=a.currentBid+Math.max(50,Math.floor(a.currentBid*0.05));
+  document.getElementById('bid-val').value='';
+  document.getElementById('bid-val').placeholder='Min ₹'+min;
+  document.getElementById('m-hint').textContent='MINIMUM BID: ₹'+min+' (current + 5%)';
+  renderBidHist(a);
+  document.getElementById('bid-modal').classList.add('open');
+}
+
+function renderBidHist(a) {
+  const h=document.getElementById('m-hist');
+  if(!a.bids.length){h.innerHTML='<div style="padding:1rem;text-align:center;color:var(--muted);font-size:12px;font-family:var(--mono)">NO BIDS YET — BE THE FIRST!</div>';return;}
+  h.innerHTML=a.bids.map((b,i)=>`<div class="bid-row${i===0?' winning':''}">
+    <div class="bid-user">${i===0?'👑 ':''} ${b.user}</div>
+    <div class="bid-amount">₹${b.amount.toLocaleString()}</div>
+    <div class="bid-time">${ago(b.time)}</div>
+  </div>`).join('');
+}
+
+function submitBid() {
+  const a=S.auctions.find(x=>x.id===S.activeBid);
+  if(!a||a.status==='ended'){notify('Auction ended','error');return;}
+  const val=parseInt(document.getElementById('bid-val').value);
+  const min=a.currentBid+Math.max(50,Math.floor(a.currentBid*0.05));
+  if(!val||val<min){notify('Bid must be at least ₹'+min,'error');return;}
+  if(val>S.cur.wallet){notify('Insufficient wallet balance!','error');return;}
+  if(a.bids.length&&a.bids[0].user===S.cur.username){notify('You already have the highest bid!','error');return;}
+  a.bids.unshift({user:S.cur.username,amount:val,time:Date.now()});
+  a.currentBid=val;
+  S.logs.unshift({time:Date.now(),user:S.cur.username,item:a.name,amount:val,aid:a.id});
+  notify('🏆 Bid ₹'+val.toLocaleString()+' placed on '+a.name,'gold');
+  document.getElementById('m-cur').textContent='₹'+val.toLocaleString();
+  renderBidHist(a);
+  document.getElementById('bid-val').value='';
+  const card=document.getElementById('ac-'+a.id);
+  if(card) card.outerHTML=cardHTML(a);
+}
+
+// ===== WATCHLIST =====
+function toggleW(id,btn) {
+  const i=S.watchlist.indexOf(id);
+  if(i===-1){S.watchlist.push(id);btn.textContent='★';notify('Added to watchlist','success');}
+  else{S.watchlist.splice(i,1);btn.textContent='☆';notify('Removed from watchlist','');}
+}
+function renderWatchlist() {
+  const g=document.getElementById('wl-grid');
+  const items=S.auctions.filter(a=>S.watchlist.includes(a.id));
+  if(!items.length){g.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">⭐</div><p>WATCHLIST EMPTY<br>TAP ☆ ON ANY AUCTION TO SAVE IT</p></div>`;return;}
+  g.innerHTML=items.map(cardHTML).join('');
+}
+
+// ===== MY BIDS =====
+function renderMyBids() {
+  const u=S.cur.username;
+  const myA=S.auctions.filter(a=>a.bids.some(b=>b.user===u));
+  const won=myA.filter(a=>a.status==='ended'&&a.bids[0]?.user===u);
+  const leading=myA.filter(a=>a.status==='live'&&a.bids[0]?.user===u);
+  const outbid=myA.filter(a=>a.status==='live'&&a.bids[0]?.user!==u);
+  document.getElementById('mb-stats').innerHTML=`
+    <div class="stat-card green"><div class="stat-label">LEADING</div><div class="stat-val">${leading.length}</div></div>
+    <div class="stat-card orange"><div class="stat-label">OUTBID</div><div class="stat-val">${outbid.length}</div></div>
+    <div class="stat-card gold"><div class="stat-label">WON</div><div class="stat-val">${won.length}</div></div>
+    <div class="stat-card"><div class="stat-label">TOTAL BIDS</div><div class="stat-val">${S.logs.filter(l=>l.user===u).length}</div></div>
+  `;
+  const list=document.getElementById('mb-list');
+  if(!myA.length){list.innerHTML=`<div class="empty-state"><div class="empty-icon">🎯</div><p>NO BIDS YET<br>HEAD TO MARKETPLACE TO START BIDDING</p></div>`;return;}
+  list.innerHTML=myA.map(a=>{
+    const myBid=a.bids.find(b=>b.user===u);
+    const iW=a.bids[0]?.user===u, isEnd=a.status==='ended';
+    return `<div class="my-bid-row${iW?' winning-bid':''}">
+      <div style="display:flex;align-items:center;gap:0.9rem">
+        <div style="font-size:1.8rem">${a.emoji}</div>
+        <div><div style="font-weight:600">${a.name}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${a.cat} · My bid: <span style="color:var(--gold)">₹${myBid.amount.toLocaleString()}</span></div></div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-family:var(--mono);font-size:10px;margin-bottom:4px">${isEnd&&iW?'<span style="color:var(--accent3)">🏆 WON</span>':isEnd?'<span style="color:var(--danger)">LOST</span>':iW?'<span style="color:var(--accent3)">▲ LEADING</span>':'<span style="color:var(--accent2)">▼ OUTBID — ₹'+a.currentBid.toLocaleString()+' current</span>'}</div>
+        ${!isEnd?`<button class="btn btn-gold" style="padding:0.35rem 0.7rem;font-size:10px" onclick="openBid(${a.id})">REBID →</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===== ADMIN =====
+function renderDashboard() {
+  const live=S.auctions.filter(a=>a.status==='live').length;
+  const ended=S.auctions.filter(a=>a.status==='ended').length;
+  const tb=S.auctions.reduce((s,a)=>s+a.bids.length,0);
+  const tv=S.auctions.reduce((s,a)=>s+a.currentBid,0);
+  document.getElementById('adm-stats').innerHTML=`
+    <div class="stat-card green"><div class="stat-label">LIVE</div><div class="stat-val">${live}</div></div>
+    <div class="stat-card"><div class="stat-label">ENDED</div><div class="stat-val">${ended}</div></div>
+    <div class="stat-card"><div class="stat-label">TOTAL BIDS</div><div class="stat-val">${tb}</div></div>
+    <div class="stat-card gold"><div class="stat-label">TOTAL VALUE</div><div class="stat-val">₹${(tv/1000).toFixed(1)}K</div></div>
+    <div class="stat-card"><div class="stat-label">USERS</div><div class="stat-val">${S.users.filter(u=>u.role!=='admin').length}</div></div>
+  `;
+  document.getElementById('recent-act').innerHTML=S.logs.slice(0,8).map(l=>`
+    <div style="display:flex;justify-content:space-between;padding:0.45rem 0.5rem;border-bottom:1px solid var(--border);font-size:11px">
+      <span style="color:var(--muted);font-family:var(--mono)">${l.user}</span>
+      <span style="color:var(--gold);font-family:var(--mono)">₹${l.amount.toLocaleString()}</span>
+      <span style="color:var(--muted)">${ago(l.time)}</span>
+    </div>`).join('');
+  const bc={};S.logs.forEach(l=>{bc[l.user]=(bc[l.user]||0)+1;});
+  const top=Object.entries(bc).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  document.getElementById('top-bid').innerHTML=top.map(([u,c],i)=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem;border-bottom:1px solid var(--border)">
+      <span style="font-family:var(--mono);font-size:11px">${i===0?'👑':i+1+'.'} ${u}</span>
+      <span style="font-family:var(--mono);color:var(--accent);font-size:11px">${c} bids</span>
+    </div>`).join('');
+}
+
+function renderManage() {
+  document.getElementById('man-tbody').innerHTML=S.auctions.map(a=>`
+    <tr>
+      <td><span style="margin-right:6px">${a.emoji}</span>${a.name}</td>
+      <td style="color:var(--muted)">${a.cat}</td>
+      <td style="font-family:var(--mono)">₹${a.startPrice.toLocaleString()}</td>
+      <td style="font-family:var(--mono);color:var(--gold)">₹${a.currentBid.toLocaleString()}</td>
+      <td style="font-family:var(--mono)">${a.bids.length}</td>
+      <td><span class="status-pill ${a.status==='live'?'pill-live':'pill-ended'}">${a.status==='live'?'● LIVE':'✕ ENDED'}</span></td>
+      <td style="font-size:11px;color:var(--muted)">${a.status==='ended'?'—':fmtT(a.endTime-Date.now())}</td>
+      <td><div style="display:flex;gap:5px">
+        <button class="btn btn-ghost" style="padding:0.28rem 0.6rem;font-size:10px" onclick="endA(${a.id})" ${a.status==='ended'?'disabled':''}>END</button>
+        <button class="btn btn-danger" style="padding:0.28rem 0.6rem;font-size:10px" onclick="delA(${a.id})">DEL</button>
+      </div></td>
+    </tr>`).join('');
+}
+
+function renderUsers() {
+  document.getElementById('usr-tbody').innerHTML=S.users.filter(u=>u.role!=='admin').map(u=>{
+    const bc=S.logs.filter(l=>l.user===u.username).length;
+    const wc=S.auctions.filter(a=>a.status==='ended'&&a.bids[0]?.user===u.username).length;
+    return `<tr>
+      <td style="font-family:var(--mono)">${u.username}</td>
+      <td>${u.name}</td>
+      <td style="color:var(--muted)">${u.team}</td>
+      <td style="font-family:var(--mono);color:var(--gold)">₹${u.wallet.toLocaleString()}</td>
+      <td style="font-family:var(--mono)">${bc}</td>
+      <td style="font-family:var(--mono);color:var(--accent3)">${wc}</td>
+      <td><span class="status-pill ${u.active?'pill-live':'pill-ended'}">${u.active?'ACTIVE':'BANNED'}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderLogs() {
+  document.getElementById('logs-tbody').innerHTML=S.logs.map(l=>`
+    <tr>
+      <td style="font-size:11px;color:var(--muted)">${new Date(l.time).toLocaleTimeString()}</td>
+      <td style="font-family:var(--mono)">${l.user}</td>
+      <td>${l.item}</td>
+      <td style="font-family:var(--mono);color:var(--gold)">₹${l.amount.toLocaleString()}</td>
+      <td><span class="status-pill pill-live">ACCEPTED</span></td>
+    </tr>`).join('');
+}
+
+function openAddModal(){document.getElementById('add-modal').classList.add('open');}
+function submitAuction() {
+  const name=v('a-name'),cat=document.getElementById('a-cat').value,emoji=v('a-emoji')||'🔩';
+  const price=parseInt(document.getElementById('a-price').value),dur=parseInt(document.getElementById('a-dur').value)||10;
+  const desc=v('a-desc'),cond=document.getElementById('a-cond').value;
+  if(!name||!price||!desc){notify('Fill all required fields','error');return;}
+  S.auctions.unshift({id:S.auctions.length+1,name,cat,emoji,desc,condition:cond,startPrice:price,currentBid:price,endTime:Date.now()+dur*60000,status:'live',bids:[]});
+  notify('Auction published: '+name,'success');
+  closeModal('add-modal');
+  renderManage();
+}
+function endA(id){const a=S.auctions.find(x=>x.id===id);if(!a)return;a.status='ended';a.endTime=Date.now();notify('Ended: '+a.name,'');renderManage();}
+function delA(id){S.auctions=S.auctions.filter(x=>x.id!==id);notify('Deleted','error');renderManage();}
+
+// ===== TIMERS =====
+let TI=null;
+function startT(){
+  TI=setInterval(()=>{
+    S.auctions.forEach(a=>{
+      if(a.status==='live'){
+        const tl=a.endTime-Date.now();
+        const el=document.getElementById('t-'+a.id);
+        if(el){
+          if(tl<=0){a.status='ended';const c=document.getElementById('ac-'+a.id);if(c)c.outerHTML=cardHTML(a);}
+          else{el.textContent=fmtT(tl);if(tl<60000)el.classList.add('time-danger');}
+        }
+        if(S.activeBid===a.id){const mt=document.getElementById('m-timer');if(mt)mt.textContent=tl<=0?'ENDED':fmtT(tl);}
+      }
+    });
+  },1000);
+}
+function stopT(){if(TI)clearInterval(TI);}
+
+// ===== UTILS =====
+function fmtT(ms){if(ms<=0)return'00:00';const h=Math.floor(ms/3600000),m=Math.floor((ms%3600000)/60000),s=Math.floor((ms%60000)/1000);return h>0?h+'h '+String(m).padStart(2,'0')+'m':String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');}
+function ago(ts){const d=(Date.now()-ts)/1000;return d<60?Math.floor(d)+'s ago':d<3600?Math.floor(d/60)+'m ago':Math.floor(d/3600)+'h ago';}
+function notify(msg,type=''){
+  const c=document.getElementById('notif');
+  const el=document.createElement('div');
+  el.className='notif-item'+(type?' '+type:'');
+  el.textContent=msg;c.appendChild(el);
+  setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity 0.3s';setTimeout(()=>el.remove(),300);},3000);
+}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-overlay').forEach(m=>{m.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});});
+</script>
+</body>
+</html>
